@@ -1,0 +1,279 @@
+fac :: integer -> integer 
+fac 0 = 1 
+fac n | n > 0 = n * fac(n - 1)
+fac n = product [1..n]
+calc :: string -> float 
+calc = head.foldl f [].words
+where 
+f :: [float] -> string -> [float]
+f (x:y:zs) "+" = (y + x ):zs
+
+fibs = 0 : 1 : next fibs
+where 
+next(a: t@(b:_)) = (a + b) : next t
+primenums = 2 : [n | n <- [3..], isprime n]
+ isPrime n = foldr (\p r-> p*p>n || (rem n p /= 0 && r)) True primeNums
+ 
+ primesST = 2 : 3 : sieve 0 5 9 (drop 2 primesST)
+ where 
+ sieve k x q ps = let fs = take k (tail primesST) in
+ [n | n <- [x,x+2..q-2], all ((/=0).rem n ) fs]
+ ++ sieve (k+1 ) (q+2) (head ps^2 ) (tail ps)
+ primesTO m = 2 : eratos [3,5..m] where
+ eratos (x : xs) | x*x>m = x : xs
+ |true = x :eratos (xs'minus' [x*x, X*x+2*x..m])
+ 
+  primes = 2 : ([3,5..] `minus` unionAll [[p*p, p*p+2*p..] | p <- primes'])
+   where 
+     primes' =  3 : ([5,7..] `minus` unionAll [[p*p, p*p+2*p..] | p <- primes']) 
+     unionAll ((x:xs):t) = x : union xs (unionAll (pairs t))
+     pairs ((x:xs):ys:t) = (x : union xs ys) : pairs t
+     
+     union (x:xs) (y:ys) = case compare x y of
+         LT -> x : union  xs (y:ys)
+         EQ -> x : union  xs    ys
+         GT -> y : union (x:xs) ys
+union a b = a ++ b
+minus (x:xs) (y:ys) = case compare x y of
+         LT -> x : minus  xs (y:ys)
+         EQ ->     minus  xs    ys
+         GT ->     minus (x:xs) ys
+minus a b = a
+
+trapezeIntegrate f a b n =
+    ((sum $ map f [a + h, a + 2*h .. b - h]) + t) * h
+    where
+        t = (f a + f b)/2
+        h = (b - a) / n
+
+main = do
+    print $ trapezeIntegrate (\x -> x*sin x) 0 (2*pi) 100
+
+import Data.Char (toLower, isAlpha)
+
+palindrom :: [Char] -> Bool
+palindrom s =
+    norm == reverse norm
+    where norm = map toLower $ filter isAlpha $ s
+
+test :: [Char] -> IO ()
+test s =
+    putStrLn $ s ++ ": " ++ show (palindrom s)
+
+main = do
+    test "А в Енисее — синева"
+    test "А роза упала на лапу Азора"
+    test "Не роза упала на лапу Азора"
+    test "Мир как Рим"
+    test "Мир не Рим"
+    test "Dogma: I am God"
+    test "I prefer Pi"
+    test "حوت فمه مفتوح"
+    test "Ne mateno, bone tamen"
+
+class Num a where
+   (+), (*) :: a -> a -> a
+   negate :: a -> a
+   
+   instance Num Int where
+   (+) = addInt
+   (*) = mulInt
+   negate = negInt
+
+instance Num Float where
+   (+) = addFloat
+   (*) = mulFloat
+   negate = negFloat
+   
+   square :: Num a => a -> a
+square x = x * x
+
+squares3 :: Num a, Num b, Num c => (a, b, c) -> (a, b, c)
+squares3 (x, y, z) = (square x, square y, square z)
+
+(==) :: Eq a => a -> a -> Bool
+
+head   :: [a] -> a
+(+)    :: Num a => a -> a -> a
+length :: Regular d => d a -> Int
+sum    :: Regular d => d Int -> Int
+
+
+subset Mass of Real where 0 ^..^ Inf; 
+role Stellar-Object {
+  has Mass $.mass is required;
+  method name () returns Str {...};
+}
+class Asteroid does Stellar-Object {
+  method name () { 'an asteroid' }
+}
+class Spaceship does Stellar-Object {
+  has Str $.name = 'some unnamed spaceship';
+}
+my Str @destroyed = < obliterated destroyed mangled >;
+my Str @damaged = « damaged 'collided with' 'was damaged by' »;
+
+# We add multi candidates to the numeric comparison operators because we are comparing them numerically,
+# but doesn't make sense to have the objects coerce to a Numeric type.
+# ( If they did coerce we wouldn't necessarily need to add these operators. )
+# We could have also defined entirely new operators this same way.
+multi sub infix:« <=> » ( Stellar-Object:D $a, Stellar-Object:D $b ) { $a.mass <=> $b.mass }
+multi sub infix:« <   » ( Stellar-Object:D $a, Stellar-Object:D $b ) { $a.mass <   $b.mass }
+multi sub infix:«   > » ( Stellar-Object:D $a, Stellar-Object:D $b ) { $a.mass   > $b.mass }
+multi sub infix:«  == » ( Stellar-Object:D $a, Stellar-Object:D $b ) { $a.mass  == $b.mass }
+
+# Define a new multi dispatcher, and add some type constraints to the parameters.
+# If we didn't define it we would have gotten a generic one that didn't have constraints.
+proto sub collide ( Stellar-Object:D $, Stellar-Object:D $ ) {*}
+
+# No need to repeat the types here since they are the same as the prototype.
+# The 'where' constraint technically only applies to $b not the whole signature.
+# Note that the 'where' constraint uses the `<` operator candidate we added earlier.
+multi sub collide ( $a, $b where $a < $b ) {
+  say "$a.name() was @destroyed.pick() by $b.name()";
+}
+multi sub collide ( $a, $b where $a > $b ) {
+  # redispatch to the previous candidate with the arguments swapped
+  samewith $b, $a;
+}
+
+# This has to be after the first two because the other ones
+# have 'where' constraints, which get checked in the
+# order the subs were written. ( This one would always match. )
+multi sub collide ( $a, $b ){
+  # randomize the order
+  my ($n1,$n2) = ( $a.name, $b.name ).pick(*);
+  say "$n1 @damaged.pick() $n2";
+}
+
+# The following two candidates can be anywhere after the proto,
+# because they have more specialized types than the preceding three.
+
+# If the ships have unequal mass one of the first two candidates gets called instead.
+multi sub collide ( Spaceship $a, Spaceship $b where $a == $b ){
+  my ($n1,$n2) = ( $a.name, $b.name ).pick(*);
+  say "$n1 collided with $n2, and both ships were ",
+  ( @destroyed.pick, 'left damaged' ).pick;
+}
+
+# You can unpack the attributes into variables within the signature.
+# You could even have a constraint on them `(:mass($a) where 10)`.
+multi sub collide ( Asteroid $ (:mass($a)), Asteroid $ (:mass($b)) ){
+  say "two asteroids collided and combined into one larger asteroid of mass { $a + $b }";
+}
+
+my Spaceship $Enterprise .= new(:mass(1),:name('The Enterprise'));
+collide Asteroid.new(:mass(.1)), $Enterprise;
+collide $Enterprise, Spaceship.new(:mass(.1));
+collide $Enterprise, Asteroid.new(:mass(1));
+collide $Enterprise, Spaceship.new(:mass(1));
+collide Asteroid.new(:mass(10)), Asteroid.new(:mass(5));
+
+from multimethods import Dispatch
+from game_objects import Asteroid, Spaceship
+from game_behaviors import ASFunc, SSFunc, SAFunc
+collide = Dispatch()
+collide.add_rule((Asteroid,  Spaceship), ASFunc)
+collide.add_rule((Spaceship, Spaceship), SSFunc)
+collide.add_rule((Spaceship,  Asteroid), SAFunc)
+def AAFunc(a, b):
+    """Behavior when asteroid hits asteroid"""
+    # ...define new behavior...
+collide.add_rule((Asteroid, Asteroid), AAFunc)
+
+@multimethod(Asteroid, Asteroid)
+def collide(a, b):
+    """Behavior when asteroid hits asteroid"""
+    # ...define new behavior...
+@multimethod(Asteroid, Spaceship)
+def collide(a, b):
+    """Behavior when asteroid hits spaceship"""
+    # ...define new behavior...
+# ... define other multimethod rules ...
+
+/* Example using run time type comparison via Java's "instanceof" operator */
+
+ interface Collideable {
+     /* Making this a class would not change the demonstration. */
+     void collideWith(Collideable other);
+ }
+
+ class Asteroid implements Collideable {
+     public void collideWith(Collideable other) {
+         if (other instanceof Asteroid) {
+             // Handle Asteroid-Asteroid collision.
+         }
+         else if (other instanceof Spaceship) {
+             // Handle Asteroid-Spaceship collision.
+         }
+     }
+ }
+
+ class Spaceship implements Collideable {
+     public void collideWith(Collideable other) {
+         if (other instanceof Asteroid) {
+             // Handle Spaceship-Asteroid collision.
+         }
+         else if (other instanceof Spaceship) {
+             // Handle Spaceship-Spaceship collision.
+         }
+     }
+ }
+ 
+ typedef void (*CollisionCase)();
+
+void collision_AA() { /* обработка столкновения Астероид-Астероид */   };
+void collision_AS() { /* обработка столкновения Астероид-Корабль */  };
+void collision_SA() { /* обработка столкновения Корабль-Астероид */  };
+void collision_SS() { /* обработка столкновения Корабль-Корабль */ };
+
+typedef enum {
+    asteroid = 0,
+    spaceship,
+    num_thing_types /* не является типом объекта, используется для нахождения количества объектов */
+} Thing;
+
+CollisionCase collisionCases[num_thing_types][num_thing_types] = {
+    {&collision_AA, &collision_AS},
+    {&collision_SA, &collision_SS}
+};
+
+void collide(Thing a, Thing b) {
+    (*collisionCases[a][b])();
+}
+
+int main() {
+    collide(spaceship, asteroid);
+}
+
+// Example using run time type comparison via dynamic_cast
+
+ struct Thing {
+     virtual void collideWith(Thing& other) = 0;
+ };
+
+ struct Asteroid : Thing {
+     void collideWith(Thing& other) {
+         // dynamic_cast to a pointer type returns NULL if the cast fails
+         // (dynamic_cast to a reference type would throw an exception on failure)
+         if (Asteroid* asteroid = dynamic_cast<Asteroid*>(&other)) {
+             // handle Asteroid-Asteroid collision
+         } else if (Spaceship* spaceship = dynamic_cast<Spaceship*>(&other)) {
+             // handle Asteroid-Spaceship collision
+         } else {
+             // default collision handling here
+         }
+     }
+ };
+
+ struct Spaceship : Thing {
+     void collideWith(Thing& other) {
+         if (Asteroid* asteroid = dynamic_cast<Asteroid*>(&other)) {
+             // handle Spaceship-Asteroid collision
+         } else if (Spaceship* spaceship = dynamic_cast<Spaceship*>(&other)) {
+             // handle Spaceship-Spaceship collision
+         } else {
+             // default collision handling here
+         }
+     }
+ };
